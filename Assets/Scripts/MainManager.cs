@@ -3,9 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class MainManager : MonoBehaviour
 {
+
+    public static MainManager Instance;
+
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
@@ -18,7 +22,24 @@ public class MainManager : MonoBehaviour
     
     private bool m_GameOver = false;
 
-    
+    public Text HighScoreText;
+    private int HighScore = 0;
+    public string HighName;
+
+    private void Awake()
+    {
+        Debug.Log("Awake");
+        if (Instance != null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+        LoadHigh();
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -72,5 +93,44 @@ public class MainManager : MonoBehaviour
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+
+        if (HighScore < m_Points)
+        {
+            SaveHigh();
+        }
+    }
+
+
+    [System.Serializable]
+    class SaveData
+    {
+        public string HighName;
+        public int HighScore;
+    }
+
+    public void SaveHigh()
+    {
+        SaveData data = new SaveData();
+        data.HighName = HighName;
+        data.HighScore = HighScore;
+
+        string json = JsonUtility.ToJson(data);
+
+        File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+    }
+
+    public void LoadHigh()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+
+            HighScore = data.HighScore;
+            HighName = data.HighName;
+
+            HighScoreText.text = $"Best Score: {HighName} {HighScore}";
+        }
     }
 }
